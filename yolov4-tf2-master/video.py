@@ -1,3 +1,4 @@
+ 
 '''
 Author: joyce
 Date: 2021-04-09 21:32:45
@@ -19,7 +20,7 @@ import tensorflow as tf
 import pyrealsense2 as rs
 import cv2
 from PIL import Image
-
+from serialport import DWritePort,DReadPort
 
 from yolo import YOLO
 
@@ -67,10 +68,12 @@ try:
         # print('x:%.2f'%x)
         # print('y:%.2f'%y)
         color_image = cv2.cvtColor(color_image,cv2.COLOR_RGB2BGR)
-
+        
         fps  = ( fps + (1./(time.time()-t1)) ) / 2
         # print("fps= %.2f"%(fps))
         color_image = cv2.putText(color_image, "fps= %.2f"%(fps), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        revice_serial=yolo.output_serial_x_y()
+        print(revice_serial)
         #color_colormap_dim = color_image.shape
         cv2.imshow('RealSense', color_image)
         c= cv2.waitKey(30) & 0xff 
