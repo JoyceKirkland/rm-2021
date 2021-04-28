@@ -2,7 +2,7 @@ import colorsys
 import copy
 import os
 import serial  # 导入模块
-import crc8
+# import crc8
 from timeit import default_timer as timer
 
 import numpy as np
@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model, load_model
 
 from nets.yolo4 import yolo_body, yolo_eval
 from utils.utils import letterbox_image
-from serialport import DWritePort
+from serialport import DWritePort,DReadPort
 
 # ser=RMSerial()
 #--------------------------------------------#
@@ -261,8 +261,9 @@ class YOLO(object):
             del draw
 
         return image
-    # def output_x_y(x,y)
-        # return x,y
+    def output_serial_x_y(self):
+        
+        return DReadPort(ser)
+
     def close_session(self):
         self.sess.close()
-
