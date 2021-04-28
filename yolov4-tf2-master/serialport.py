@@ -12,7 +12,7 @@ import time
 import logging
 import sys
 import struct
-import crc8
+# import crc8
 
 CRC8Tab =[0, 94, 188, 226, 97, 63, 221, 131, 194, 156, 126, 32, 163, 253, 31, 65,
         157, 195, 33, 127, 252, 162, 64, 30, 95, 1, 227, 189, 62, 96, 130, 220,
@@ -104,6 +104,8 @@ def DReadPort(ser):
     while(ser!=-1):
         if ser.in_waiting:
             readstr = ser.read(ser.in_waiting)
+        else:
+            print('none')
         # if readbuf[0] == 0x55 and readbuf[1] == 0xaa:
         #     readstr = readbuf
         # else:
