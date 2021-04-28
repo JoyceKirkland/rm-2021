@@ -1,6 +1,8 @@
 import colorsys
 import copy
 import os
+import serial  # 导入模块
+import crc8
 from timeit import default_timer as timer
 
 import numpy as np
@@ -12,14 +14,27 @@ from tensorflow.keras.models import Model, load_model
 
 from nets.yolo4 import yolo_body, yolo_eval
 from utils.utils import letterbox_image
+from serialport import DWritePort
 
-
+# ser=RMSerial()
 #--------------------------------------------#
 #   使用自己训练好的模型预测需要修改2个参数
 #   model_path和classes_path都需要修改！
 #   如果出现shape不匹配，一定要注意
 #   训练时的model_path和classes_path参数的修改
 #--------------------------------------------#
+# try:
+        # 打开串口，并得到串口对象
+ser = serial.Serial('/dev/tty', 115200, timeout=0)
+        # 判断是否打开成功
+if(False == ser.is_open):
+        ser = -1
+        print("---异常---")
+else:
+    print("serial is open!")
+# except Exception as e:
+        # print("---异常---：", e)
+
 class YOLO(object):
     _defaults = {
         "model_path"        : 'logs/last1.h5',
@@ -140,6 +155,7 @@ class YOLO(object):
     #   检测图片
     #---------------------------------------------------#
     def detect_image(self, image,distacne_center):
+        global ser
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
         #   也可以直接resize进行识别
@@ -229,7 +245,18 @@ class YOLO(object):
             
             draw.text(((left+right)/2,(top+bottom)/2),str(str_x),(255, 0, 0),font=font)
             draw.text(((left+right)/2,(top+bottom)/2+20),str(str_y),(255, 0, 0),font=font)
-            print('distance:%.3f'%(distacne_center))
+            # print('distance:%.3f'%(distacne_center))
+            str_x1=int(str_x)
+            str_y1=int(str_y)
+            distacne_center1=int(distacne_center)
+            
+            str_x2=int('{:016b}'.format(str_x1))
+            str_y2=int('{:016b}'.format(str_y1))
+            distacne_center2=int('{:016b}'.format(distacne_center1))
+            # print('distance:'+(distacne_center))
+         
+            DWritePort(ser,str_x2,str_y2,distacne_center2)
+            # print('distance:%.3f'%(distacne_center))
             # output_x_y(str_x,str_y)
             del draw
 
@@ -238,3 +265,4 @@ class YOLO(object):
         # return x,y
     def close_session(self):
         self.sess.close()
+
