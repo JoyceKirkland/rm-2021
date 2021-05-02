@@ -1,7 +1,7 @@
 '''
 Author: joyce
 Date: 2021-04-09 21:32:45
-LastEditTime: 2021-05-01 16:08:36
+LastEditTime: 2021-05-01 22:27:13
 LastEditors: Please set LastEditors
 Description:: 
 '''
@@ -19,10 +19,20 @@ import tensorflow as tf
 import pyrealsense2 as rs
 import cv2
 import crc8
+import serial
 from PIL import Image
-
+from serialport import DReadPort
 
 from yolo import YOLO
+
+ser = serial.Serial('/dev/ttyUSB1', 115200, timeout=0)
+        # 判断是否打开成功
+if(False == ser.is_open):
+        ser = -1
+        print("---异常---")
+else:
+    print("serial is open!")
+
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -44,6 +54,7 @@ config=rs.config()
 # else:
     # config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
+
 pipeline.start(config)
 
 capture=cv2.VideoCapture(6)
@@ -55,12 +66,10 @@ cv2.namedWindow("1",cv2.WINDOW_FULLSCREEN)
 cv2.setWindowProperty("1",cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
 # cv2.setWindowProperty("2",cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
 try:
-    while(True):
-        
+    while(True):   
         #______________深度相机_____________________________#
         t1=time.time()
         ref,frame=capture.read()
-        # flag=0
         frames = pipeline.wait_for_frames()
         color_frame = frames.get_color_frame()
         depth_frame=frames.get_depth_frame()
@@ -73,43 +82,41 @@ try:
         color_image = np.asanyarray(color_frame.get_data())
         # color_image=cv2.cvtColor(color_image,cv2.COLOR_BGR2RGB)
         color_image = Image.fromarray(np.uint8(color_image))
-        color_image= np.array(yolo.detect_image(color_image,distacne_center))
+        color_image= np.array(yolo.detect_image(color_image,distacne_center,ser))
         # print('x:%.2f'%x)
         # print('y:%.2f'%y)
         color_image = cv2.cvtColor(color_image,cv2.COLOR_RGB2BGR)
-        color_image=cv2.resize(color_image,(2560,1440),cv2.INTER_AREA)#放大显示，帧率会掉
-        frame=cv2.resize(frame,(2560,1440),cv2.INTER_AREA)#放大显示，帧率会掉
+        # color_image=cv2.resize(color_image,(2560,1440),cv2.INTER_AREA)#放大显示，帧率会掉
+        # frame=cv2.resize(frame,(2560,1440),cv2.INTER_AREA)#放大显示，帧率会掉
         fps  = ( fps + (1./(time.time()-t1)) ) / 2
         # print("fps= %.2f"%(fps))
         color_image = cv2.putText(color_image, "fps= %.2f"%(fps), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         # frame = cv2.putText(frame, "fps= %.2f"%(fps), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-        #color_colormap_dim = color_image.shape
-        # cv2.imshow('1', color_image)
-        # frame_change=color_image
         # cv2.imshow("RealSense",color_image)
         c= cv2.waitKey(30) & 0xff
         # flag=0 
         if b==1:
-            # cv2.imshow("video",frame)
-            
             cv2.imshow("1",color_image)
-            # print(flag)
             
         elif b==2:
-            
             cv2.imshow("1",frame)
-            # print(flag)
             
-        #__按1深度相机，按2为普通小黑____________________#    
-        if c==50:#按键数字2
+        #__串口收___________________#    
+        if yolo.output_serial_x_y(ser)==2:#按键数字2
             b=2
             
-        elif c==49:#按键数字1
+        elif yolo.output_serial_x_y(ser)==1:#按键数字1
             b=1
         #————————————————————————————————#
 
+        #__按1深度相机，按2为普通小黑____________________#    
+        # if c==50:#按键数字2
+        #     b=2
+            
+        # elif c==49:#按键数字1
+        #     b=1
+        #————————————————————————————————#
         #__按2直接切换______________________#      
         # if c==50:
         #     b=2
@@ -117,7 +124,7 @@ try:
         #     if(flag%2==0):
         #         b=1
         #————————————————————————————————#
-
+        # print(yolo.output_serial_x_y(ser))
         if c==27:
             capture.release()
             break
