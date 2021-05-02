@@ -2,7 +2,7 @@ import colorsys
 import copy
 import os
 import serial  # 导入模块
-# import crc8
+import crc8
 from timeit import default_timer as timer
 
 import numpy as np
@@ -25,13 +25,13 @@ from serialport import DWritePort,DReadPort
 #--------------------------------------------#
 # try:
         # 打开串口，并得到串口对象
-ser = serial.Serial('/dev/tty', 115200, timeout=0)
-        # 判断是否打开成功
-if(False == ser.is_open):
-        ser = -1
-        print("---异常---")
-else:
-    print("serial is open!")
+# ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=0)
+#         # 判断是否打开成功
+# if(False == ser.is_open):
+#         ser = -1
+#         print("---异常---")
+# else:
+#     print("serial is open!")
 # except Exception as e:
         # print("---异常---：", e)
 
@@ -154,8 +154,8 @@ class YOLO(object):
     #---------------------------------------------------#
     #   检测图片
     #---------------------------------------------------#
-    def detect_image(self, image,distacne_center):
-        global ser
+    def detect_image(self, image,distacne_center,ser):
+        # global ser
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
         #   也可以直接resize进行识别
@@ -218,7 +218,7 @@ class YOLO(object):
             draw = ImageDraw.Draw(image)
             label_size = draw.textsize(label, font)
             label = label.encode('utf-8')
-            print(label, top, left, bottom, right)
+            # print(label, top, left, bottom, right)
             # print(out_boxes[1]+out_boxes[3])
             # print(out_boxes[0]+out_boxes[2])
 
@@ -246,23 +246,27 @@ class YOLO(object):
             draw.text(((left+right)/2,(top+bottom)/2),str(str_x),(255, 0, 0),font=font)
             draw.text(((left+right)/2,(top+bottom)/2+20),str(str_y),(255, 0, 0),font=font)
             # print('distance:%.3f'%(distacne_center))
-            str_x1=int(str_x)
-            str_y1=int(str_y)
-            distacne_center1=int(distacne_center)
-            
-            str_x2=int('{:016b}'.format(str_x1))
-            str_y2=int('{:016b}'.format(str_y1))
-            distacne_center2=int('{:016b}'.format(distacne_center1))
+            str_x1=np.int16(str_x)
+            str_y1=np.int16(str_y)
+            distacne_center1=np.int16(distacne_center)
+            # print('?????')
+            # str_x2=np.int16('{:016b}'.format(str_x1))
+            # str_y2=np.int16('{:016b}'.format(str_y1))
+            # distacne_center2=np.int16('{:016b}'.format(distacne_center1))
             # print('distance:'+(distacne_center))
-         
-            DWritePort(ser,str_x2,str_y2,distacne_center2)
+            # print('x:%016d'%str_x1)
+            # print('y:%016d'%str_y1)
+            # print('distance:%016d'%distacne_center1)
+            # DWritePort(ser,str_x2,str_y2,distacne_center2)#串口发送
             # print('distance:%.3f'%(distacne_center))
-            # output_x_y(str_x,str_y)
+            
+            # DReadPort(ser)#串口读取
+            
             del draw
 
         return image
-    def output_serial_x_y(self):
-        
+    def output_serial_x_y(self,ser):
+
         return DReadPort(ser)
 
     def close_session(self):
