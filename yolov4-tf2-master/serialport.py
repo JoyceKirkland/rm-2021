@@ -12,7 +12,7 @@ import time
 import logging
 import sys
 import struct
-import crc8
+
 
 CRC8Tab =[0, 94, 188, 226, 97, 63, 221, 131, 194, 156, 126, 32, 163, 253, 31, 65,
         157, 195, 33, 127, 252, 162, 64, 30, 95, 1, 227, 189, 62, 96, 130, 220,
@@ -38,11 +38,8 @@ g_receive=[0,0,0,0,0,0,0,0]
 #CRC校验
 def crc_sum(buf, len):
     check = 0
-    # (ctypes.c_uint16)len=len
-
     i = 0
     while(i<len):
-        # crc += data[i]
         check=CRC8Tab[buf[i]^(buf[i])]
         i += 1
     return (check) & 0x00FF
@@ -70,10 +67,15 @@ def getDataForSend(rect_x,rect_y,distacne_center,CRC):
     g_write_buf[7]=CRC & 0xff
     g_write_buf[8]=0x45
 
-    x=(g_write_buf[1]<<8)|g_write_buf[2]
-    y=(g_write_buf[3]<<8)|g_write_buf[4]
-    # print('x:%d'%x)
-    # print('y:%d'%y)
+    # x=(g_write_buf[1]<<8)|g_write_buf[2]
+    # y=(g_write_buf[3]<<8)|g_write_buf[4]
+    print('g_write_buf[1]:%d'%g_write_buf[1])
+    print('g_write_buf[2]:%d'%g_write_buf[2])
+    print('g_write_buf[3]:%d'%g_write_buf[3])
+    print('g_write_buf[4]:%d'%g_write_buf[4])
+    print('g_write_buf[5]:%d'%g_write_buf[5])
+    print('g_write_buf[6]:%d'%g_write_buf[6])
+
 
 # # 打开串口#
 # def DOpenPort():
@@ -108,27 +110,9 @@ def DReadPort(ser):
     # 循环接收数据，此为死循环，可用线程实现
     # readstr = ""
     while(ser!=-1):
-        # print(11)
-        # if ser.in_waiting:
         readstr = ser.read(ser.in_waiting)
-        # read_temp=[]
-        # for i in readstr[:]:
-            # read_temp.append(i)
         readstr = int.from_bytes(readstr,byteorder='big',signed=False)
-            # list(readstr)
-        # else:
-            # print('none')
-        # if readbuf[0] == 0x55 and readbuf[1] == 0xaa:
-        #     readstr = readbuf
-        # else:
-        #     readstr = readstr + readbuf
-        # print(readstr)
-        # print(ser.in_waiting)
-        # return read_temp
-        # print(ser)
         return readstr
-
-
 
 
 def TestStop(ser):
