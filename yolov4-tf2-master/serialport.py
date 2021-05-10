@@ -1,7 +1,7 @@
 '''
 Author: joyce
 Date: 2021-04-24 10:46:24
-LastEditTime: 2021-04-25 13:23:57
+LastEditTime: 2021-05-01 21:01:30
 LastEditors: Please set LastEditors
 Description:: 
 '''
@@ -12,7 +12,7 @@ import time
 import logging
 import sys
 import struct
-# import crc8
+
 
 CRC8Tab =[0, 94, 188, 226, 97, 63, 221, 131, 194, 156, 126, 32, 163, 253, 31, 65,
         157, 195, 33, 127, 252, 162, 64, 30, 95, 1, 227, 189, 62, 96, 130, 220,
@@ -33,16 +33,13 @@ CRC8Tab =[0, 94, 188, 226, 97, 63, 221, 131, 194, 156, 126, 32, 163, 253, 31, 65
 
 g_CRC_buf=[0,0,0,0,0,0,0]
 g_write_buf=[0,0,0,0,0,0,0,0,0]
-
+g_receive=[0,0,0,0,0,0,0,0]
 
 #CRC校验
 def crc_sum(buf, len):
     check = 0
-    # (ctypes.c_uint16)len=len
-
     i = 0
     while(i<len):
-        # crc += data[i]
         check=CRC8Tab[buf[i]^(buf[i])]
         i += 1
     return (check) & 0x00FF
@@ -50,42 +47,52 @@ def crc_sum(buf, len):
 def getDataForCRC(rect_x,rect_y,distacne_center):
     global g_CRC_buf
     g_CRC_buf[0]=0x53
-    g_CRC_buf[1]=(rect_x>>8)&0xff
-    g_CRC_buf[2]=(rect_x)&0xff
-    g_CRC_buf[3]=(rect_y>>8)&0xff
-    g_CRC_buf[4]=(rect_y)&0xff
-    g_CRC_buf[5]=(distacne_center>>8) & 0xff
-    g_CRC_buf[6]=(distacne_center) & 0xff
+    g_CRC_buf[1]=(rect_x) & 0xff
+    g_CRC_buf[2]=(rect_x>>8)& 0xff
+    g_CRC_buf[3]=(rect_y) & 0xff
+    g_CRC_buf[4]=(rect_y>>8)& 0xff
+    g_CRC_buf[5]=(distacne_center) & 0xff
+    g_CRC_buf[6]=(distacne_center>>8) & 0xf
 
 #发送内容
 def getDataForSend(rect_x,rect_y,distacne_center,CRC):
     global g_write_buf
     g_write_buf[0]=0x53
-    g_write_buf[1]=(rect_x>>8) & 0xff
-    g_write_buf[2]=(rect_x)& 0xff
-    g_write_buf[3]=(rect_y>>8) & 0xff
-    g_write_buf[4]=(rect_y)& 0xff
-    g_write_buf[5]=(distacne_center>>8) & 0xff
-    g_write_buf[6]=(distacne_center) & 0xf
+    g_write_buf[1]=(rect_x) & 0xff
+    g_write_buf[2]=(rect_x>>8)& 0xff
+    g_write_buf[3]=(rect_y) & 0xff
+    g_write_buf[4]=(rect_y>>8)& 0xff
+    g_write_buf[5]=(distacne_center) & 0xff
+    g_write_buf[6]=(distacne_center>>8) & 0xf
     g_write_buf[7]=CRC & 0xff
     g_write_buf[8]=0x45
 
-# 打开串口
-def DOpenPort():
-    try:
-        # 打开串口，并得到串口对象
-        ser = serial.Serial('dev/ttyUSB0', 115200, timeout=0)
-        # 判断是否打开成功
-        if(False == ser.is_open):
-           ser = -1
-    except Exception as e:
-        print("---异常---：", e)
+    # x=(g_write_buf[1]<<8)|g_write_buf[2]
+    # y=(g_write_buf[3]<<8)|g_write_buf[4]
+    print('g_write_buf[1]:%d'%g_write_buf[1])
+    print('g_write_buf[2]:%d'%g_write_buf[2])
+    print('g_write_buf[3]:%d'%g_write_buf[3])
+    print('g_write_buf[4]:%d'%g_write_buf[4])
+    print('g_write_buf[5]:%d'%g_write_buf[5])
+    print('g_write_buf[6]:%d'%g_write_buf[6])
 
-    return ser
+
+# # 打开串口#
+# def DOpenPort():
+#     try:
+#         # 打开串口，并得到串口对象
+#         ser = serial.Serial('dev/ttyUSB0', 115200, timeout=0)
+#         # 判断是否打开成功
+#         if(False == ser.is_open):
+#            ser = -1
+#     except Exception as e:
+#         print("---异常---：", e)
+
+#     return ser
 
 # 关闭串口
 def DColsePort(ser):
-    uart.fdstate = -1
+    ser.fdstate = -1
     ser.close()
                                
 # 写数据
@@ -99,21 +106,15 @@ def DWritePort(ser, rect_x,rect_y,distacne_center):
 
 
 def DReadPort(ser):
+    # global g_receive
     # 循环接收数据，此为死循环，可用线程实现
-    readstr = ""
+    # readstr = ""
     while(ser!=-1):
-        if ser.in_waiting:
-            readstr = ser.read(ser.in_waiting)
-        else:
-            print('none')
-        # if readbuf[0] == 0x55 and readbuf[1] == 0xaa:
-        #     readstr = readbuf
-        # else:
-        #     readstr = readstr + readbuf
-            return readstr
-
+        readstr = ser.read(ser.in_waiting)
+        readstr = int.from_bytes(readstr,byteorder='big',signed=False)
+        return readstr
 
 
 def TestStop(ser):
-    DColsePort(uart.fd)  # 关闭串口
+    DColsePort(ser.fd)  # 关闭串口
 
