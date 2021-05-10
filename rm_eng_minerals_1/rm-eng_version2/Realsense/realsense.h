@@ -37,7 +37,7 @@ public:
     //void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& depth_frame, float depth_scale);
     void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& depth_frame, float depth_scale,int min_video_distance,int depth_clipping_distance);
 
-    RotatedRect find_rect(Mat frame);
+    RotatedRect find_rect(Mat frame,int min_distance);
     void get_frame();
     void test();
     

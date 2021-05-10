@@ -99,6 +99,7 @@ SerialPort::~SerialPort(void)
 *  @authors: Rcxxx
 *            Hzkkk
 */
+
 void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
 {
     memset(g_rec_buf, '0', REC_BUFF_LENGTH); //清空缓存
@@ -107,6 +108,7 @@ void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
     for (int i = 0; i < (int)sizeof(rec_buf_temp); ++i)
     {
         if (rec_buf_temp[i] == 'S' && rec_buf_temp[i + sizeof(g_rec_buf) - 1] == 'E')
+        // if (rec_buf_temp[i]-(int)rec_buf_temp[i]==0)
         {
             for (int j = 0; j < ((int)sizeof(g_rec_buf)); ++j)
             {
@@ -117,14 +119,49 @@ void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
     }
     for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
     {
-        arr[i] = (g_rec_buf[i] - '0');
+        arr[i] = (g_rec_buf[i]);
+    }
+
+    for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
+    {
+        cout << "  arr["<<i<<"]: " << arr[i] << endl;
     }
     tcflush(fd, TCIFLUSH);
-#if SHOW_SERIAL_INFORMATION == 1
+// #if SHOW_SERIAL_INFORMATION == 1
     cout << "  rec_buf_temp: " << rec_buf_temp << endl;
     cout << "  g_rec_buf: " << g_rec_buf << endl;
-#endif
+// #endif
 }
+
+// int* SerialPort::RMreceiveData(int *rec)
+// {
+//     memset(g_rec_buf, '0', (int)sizeof(rec)); //清空缓存
+//     char rec_buf_temp[REC_BUFF_LENGTH * 2];
+//     read(fd, rec, sizeof(rec));
+//     // for (int i = 0; i < (int)sizeof(rec_buf_temp); ++i)
+//     {
+//         // if (rec_buf_temp[i] == 'S' && rec_buf_temp[i + sizeof(g_rec_buf) - 1] == 'E')
+//         if (*rec-(int)*rec==0)
+//         {
+//             // for (int j = 0; j < ((int)sizeof(g_rec_buf)); ++j)
+//             {
+//                 // g_rec_buf[j] = rec_buf_temp[i + j];
+//                 return rec;
+//             }
+//             // break;
+//         }
+//     }
+//     // for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
+//     // {
+//     //     arr[i] = (g_rec_buf[i] - '0');
+//     // }
+//     tcflush(fd, TCIFLUSH);
+// #if SHOW_SERIAL_INFORMATION == 1
+//     cout << "  rec_buf_temp: " << rec_buf_temp << endl;
+//     cout << "  g_rec_buf: " << g_rec_buf << endl;
+// #endif
+// }
+
 
 /**
  *@brief: RM串口发送格式化函数
@@ -139,15 +176,15 @@ void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
  * @authors: Rcxxx
  *           Hzkkk
  */
-void SerialPort::RMserialWrite(int16_t rect_x,int16_t rect_y)
+void SerialPort::RMserialWrite(int16_t rect_x,int16_t rect_y,int16_t min_distance)
 {
     // sprintf(g_CRC_buf, "%c%1d%1d%1d%04d%1d%03d%04d", 'S', data_type, is_shooting, _yaw ,yaw, _pitch, pitch, depth);
     // getDataForCRC(data_type, is_shooting, _yaw, yaw, _pitch, pitch, depth);
-    getDataForCRC(rect_x, rect_y);
-    //cout<<rect_x<<","<<rect_y<<endl;
+    getDataForCRC(rect_x, rect_y,min_distance);
+    // cout<<"distance:"<<min_distance<<endl;
     
     uint8_t CRC = Checksum_CRC8(g_CRC_buf, sizeof(g_CRC_buf));
-    getDataForSend(rect_x,rect_y,CRC);
+    getDataForSend(rect_x,rect_y,min_distance,CRC);
     /*
     0：帧头     1：是否正确识别的标志   2：是否射击的信号
     3：yaw正负值    4：yaw低八位数据    5：yaw高八位数据
@@ -215,13 +252,15 @@ uint8_t SerialPort::Checksum_CRC8(unsigned char *buf, uint16_t len)
     return (check)&0x00ff;
 }
 
-void SerialPort::getDataForCRC(int16_t rect_x,int16_t rect_y)
+void SerialPort::getDataForCRC(int16_t rect_x,int16_t rect_y,int16_t min_distance)
 {
     g_CRC_buf[0] = 0x53;
     g_CRC_buf[1] = (rect_x >> 8) & 0xff;
     g_CRC_buf[2] = (rect_x)&0xff;
     g_CRC_buf[3] = (rect_y >> 8) & 0xff;
     g_CRC_buf[4] = (rect_y)&0xff;
+    g_CRC_buf[5] = (min_distance >> 8) &0xff;
+    g_CRC_buf[6] = (min_distance)&0xff;
     // rect_x=g_CRC_buf[1]<<8 | g_CRC_buf[2];
     // rect_y=g_CRC_buf[3]<<8 | g_CRC_buf[4];
 
@@ -229,15 +268,17 @@ void SerialPort::getDataForCRC(int16_t rect_x,int16_t rect_y)
 
 }
 
-void SerialPort::getDataForSend(int16_t rect_x,int16_t rect_y,uint8_t CRC)
+void SerialPort::getDataForSend(int16_t rect_x,int16_t rect_y,int16_t min_distance,uint8_t CRC)
 {
     g_write_buf[0] = 0x53;
     g_write_buf[1] = (rect_x >> 8) & 0xff;
     g_write_buf[2] = (rect_x) & 0xff;
     g_write_buf[3] = (rect_y >> 8) & 0xff;
     g_write_buf[4] = (rect_y) & 0xff;
-    g_write_buf[5] = CRC & 0xff;
-    g_write_buf[6] = 0x45;
+    g_write_buf[5] = (min_distance >> 8) &0xff;
+    g_write_buf[6] = (min_distance)&0xff;
+    g_write_buf[7] = CRC & 0xff;
+    g_write_buf[8] = 0x45;
 
     // rect_x=g_write_buf[1]<<8 | g_write_buf[2];
     // rect_y=g_write_buf[3]<<8 | g_write_buf[4];

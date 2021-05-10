@@ -14,6 +14,8 @@
 #include"rm-eng_version2/configure.h"
 #include"serialport.cpp"
 
+// namedWindow("1",WINDOW_NORMAL);
+// setWindowProperty("1",WND_PROP_FULLSCREEN,WINDOW_FULLSCREEN);
 // using namespace cv;
 // using namespace std;
 // using namespace rs2;
@@ -25,7 +27,8 @@ Mat dst1;
 Mat inrange;
 int ele_size=13;
 int ele_size_Max=21;
-
+VideoCapture capture(0);
+Mat src;//小黑屏幕
 Mat element = getStructuringElement(MORPH_RECT, Size(ele_size, ele_size));
 Mat kernel = (Mat_<float>(3, 3) << 0,-1,0,0,4,0,0,-1,0);//目前较稳定，偶然会有些许抖动，基本不受杂质影响
 //Mat kernel = (Mat_<float>(3, 3) << 1,1,1,1,-8,1,1,1,1);
@@ -148,7 +151,7 @@ void mineral::remove_background(rs2::video_frame& other_frame, const rs2::depth_
         }
     }
 }
-RotatedRect mineral::find_rect(Mat frame)    
+RotatedRect mineral::find_rect(Mat frame,int min_distance)    
 {
     RotatedRect rect;
     RotatedRect rect1;
@@ -203,17 +206,24 @@ RotatedRect mineral::find_rect(Mat frame)
             putText(frame,_y,Point(rect.center.x-20,rect.center.y-50),FONT_HERSHEY_PLAIN,2,Scalar(0,255,0),2,8);
             //x=(float16_t)rect.center.x;
             //y=(float16_t)rect.center.y;
+            // line(frame,Point2f(frame.cols/2-20,frame.rows/2),Point2f(frame.cols/2+20,frame.rows/2),Scalar(255,255,255),2);
+            // line(frame,Point2f(frame.cols/2,frame.rows/2-20),Point2f(frame.cols/2,frame.rows/2+20),Scalar(255,255,255),2);
 
-            SerialPort::RMserialWrite((int16_t)rect.center.x,(int16_t)rect.center.y);
+            SerialPort::RMserialWrite((int16_t)rect.center.x,(int16_t)rect.center.y,min_distance);
             //SerialPort::RMserialWrite(x,y);
 
             return rect1;
         }
         
     }
+    
     //imshow("mask",ele);
     
 }
+// void mineral::lost_rect(RotatedRect rect) 
+// {
+//     for(int i=0;)
+// }
 bool mineral::profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev)
 {
     for (auto&& sp : prev)
@@ -240,10 +250,11 @@ void mineral::get_frame()
     float depth_scale = get_depth_scale(profile.get_device());
     rs2_stream align_to = find_stream_to_align(profile.get_streams());
     rs2::align align(align_to);
-    
+    int change=1;
     //float depth_clipping_distance = 0.8*100;
 
     //namedWindow("调试",WINDOW_GUI_EXPANDED);
+    namedWindow("1",WINDOW_NORMAL);
     //createTrackbar("背景消除最短距离","调试",&min_video_distance,min_video_distance_Max,NULL);
     //createTrackbar("背景消除最远距离","调试",&depth_clipping_distance,depth_clipping_distance_Max,NULL);
 
@@ -263,6 +274,7 @@ void mineral::get_frame()
     for(;;)
     {
         frameset frameset = pipe.wait_for_frames();  //堵塞程序直到新的一帧捕获
+        capture>>src;
         //frame src=rs2_extract_frame(frameset,)
         if (profile_changed(pipe.get_active_profile().get_streams(), profile.get_streams()))
         {
@@ -300,10 +312,15 @@ void mineral::get_frame()
         //cout<<"distance: "<<aligned_depth_frame.get_distance(depth_w/2,depth_h/2)<<"m"<<endl;
 
         int min_distance=aligned_depth_frame.get_distance(depth_w/2,depth_h/2)*100;
-
-        int max_distance=min_distance+2;
-
-        remove_background(other_frame, aligned_depth_frame, depth_scale,min_distance,max_distance);
+        int remove_min_distance=min_distance;
+        int max_distance=min_distance+10;
+        if(min_distance>200)
+        {
+            remove_min_distance=20;
+            max_distance=100;
+            //remove_background(other_frame, aligned_depth_frame, depth_scale,remove_min_distance,max_distance);
+        }
+        remove_background(other_frame, aligned_depth_frame, depth_scale,remove_min_distance,max_distance);
         //remove_background(other_frame, aligned_depth_frame, depth_scale);
 
         //创建OPENCV类型 并传入数据
@@ -316,18 +333,67 @@ void mineral::get_frame()
         cvtColor(color_image,color_image,COLOR_BGR2RGB);
         //实现深度图对齐到彩色图
         //Mat result=align_Depth2Color(depth_image,color_image,profile);
-        find_rect(color_image);
+        find_rect(color_image,min_distance);
         //distance(find_rect(color_image),color_image,profile);
         //measure_distance(color_image,depth_image,profile,find_rect(color_image));            //自定义窗口大小
         //显示
+        line(color_image,Point2f(color_image.cols/2-20,color_image.rows/2),Point2f(color_image.cols/2+20,color_image.rows/2),Scalar(255,255,255),2);
+        line(color_image,Point2f(color_image.cols/2,color_image.rows/2-20),Point2f(color_image.cols/2,color_image.rows/2+20),Scalar(255,255,255),2);
 
         //imshow("depth_image",depth_image);
-        imshow("调试",color_image);
+        
+        
+
         //imshow("depth_image_1",depth_image_1);
         //imshow("result",result);
+
+        int rm_recive[3];
         
+        SerialPort::RMreceiveData(rm_recive);
+        // int *rm_recive=SerialPort::RMreceiveData(rm_recive);
+        // int switch_=*rm_recive;
         int key = waitKey(1);
         if(char(key) == 27)break;
+        if(change==1)
+        {
+            imshow("1",color_image);
+        }
+        else if(change==2)
+        {
+            imshow("1",src);
+        }
+
+        // if(char(key) ==49)
+        // {
+        //     change=1;
+
+        // }else if(char(key) ==50)
+        // {
+        //     change=2;
+        // }
+        
+        if(rm_recive[1] ==1)
+        {
+            change=1;
+
+        }else if(rm_recive[1] ==2)
+        {
+            change=2;
+        }
+
+        // for(int i=0;i<3;i++)
+        {
+            cout<<"rm_recive["<<1<<"]:"<<rm_recive[1]<<endl;
+
+        }
+        // if(switch_ ==1)
+        // {
+        //     change=1;
+
+        // }else if(switch_ ==2)
+        // {
+        //     change=2;
+        // }
         //t=((double)cv::getTickCount()-t)/cv::getTickFrequency();
         //int fps=double(1.0/t);
         //cout<<"fps:"<<fps<<endl;
