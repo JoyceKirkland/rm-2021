@@ -1,20 +1,22 @@
-#include <iostream>
-#include <fstream>
-#include <opencv2/opencv.hpp>
-#include <opencv2/dnn.hpp>
-#include <opencv2/dnn/shape_utils.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <librealsense2/rs.h>
-#include <librealsense2/rs.hpp>
-#include <librealsense2/h/rs_pipeline.h>
-#include <librealsense2/h/rs_option.h>
-#include <librealsense2/h/rs_frame.h>
-#include<librealsense2/rsutil.h>
-#include <librealsense2/hpp/rs_frame.hpp>
-using namespace std;
-using namespace cv;
-using namespace rs2;
+// #include <iostream>
+// #include <fstream>
+// #include <opencv2/opencv.hpp>
+// #include <opencv2/dnn.hpp>
+// #include <opencv2/dnn/shape_utils.hpp>
+// #include <opencv2/imgproc.hpp>
+// #include <opencv2/highgui.hpp>
+// #include <librealsense2/rs.h>
+// #include <librealsense2/rs.hpp>
+// #include <librealsense2/h/rs_pipeline.h>
+// #include <librealsense2/h/rs_option.h>
+// #include <librealsense2/h/rs_frame.h>
+// #include<librealsense2/rsutil.h>
+// #include <librealsense2/hpp/rs_frame.hpp>
+// using namespace std;
+// using namespace cv;
+// using namespace rs2;
+#include "configure.h"
+#include "serialport.cpp"
 // Remove the bounding boxes with low confidence using non-maxima suppression
 // void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs);
  
@@ -61,6 +63,8 @@ void drawPred(int classId, float conf, int left, int top, int right, int bottom,
  
     //Get the label for the class name and its confidence
     string label = cv::format("%.2f", conf);
+    char box_x[20];
+    char box_y[20];
     if (!classes.empty())
     {
         CV_Assert(classId < (int)classes.size());
@@ -76,6 +80,7 @@ void drawPred(int classId, float conf, int left, int top, int right, int bottom,
     Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
     top = max(top, labelSize.height);
     putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+
 }
 
 // Remove the bounding boxes with low confidence using non-maxima suppression
@@ -133,8 +138,9 @@ void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs)
 int main(int argc, char** argv)
 {
     // Load names of classes
+    // SerialPort serialport;
 	int change=1;
-    string classesFile = "/home/joyce/github/yolov3-tiny/darknet/data/voc.names";
+    string classesFile = "voc_classes.txt";
     ifstream classNamesFile(classesFile.c_str());
     if (classNamesFile.is_open())
     {
@@ -147,8 +153,8 @@ int main(int argc, char** argv)
     }
  
     // Give the configuration and weight files for the model
-    String modelConfiguration = "/home/joyce/github/yolov3-tiny/darknet/cfg/yolov3-tiny.cfg";
-    String modelWeights = "/home/joyce/github/yolov3-tiny/darknet/backup/yolov3-tiny_final.weights";
+    String modelConfiguration = "yolov3-tiny.cfg";
+    String modelWeights = "yolov3-tiny_final.weights";
  
     // Load the network
     dnn::Net net = dnn::readNetFromDarknet(modelConfiguration, modelWeights);
@@ -189,7 +195,7 @@ int main(int argc, char** argv)
                         CV_8UC3,(void*)video_src.get_data(),Mat::AUTO_STEP);
 		cvtColor(color_image,color_image,COLOR_RGB2BGR);
         int min_distance=depth.get_distance(width/2,height/2)*100;//cm
-        cout<<"min_distance: "<<min_distance<<"cm"<<endl;
+        // cout<<"min_distance: "<<min_distance<<"cm"<<endl;
 		 
         // Create a 4D blob from a frame.
         Mat blob;
