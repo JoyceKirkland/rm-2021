@@ -169,15 +169,15 @@ RotatedRect mineral::find_rect(Mat frame,int min_distance)
     vector<Vec4i> hierarchy;
     // morphologyEx(inrange,ele, MORPH_OPEN, element);//形态学开运算
     dst1=hsv.clone();
-    //imshow("dst1",dst1);
+    
     Canny(dst1,mask,canny_th1,canny_th2,7);//边缘检测
     dst=mask.clone();
     
     filter2D(dst, dst, CV_8UC1, kernel);
     GaussianBlur(dst,dst,Size(7,7),3,3);
     
-    
     findContours(dst,contours,hierarchy,RETR_EXTERNAL,CHAIN_APPROX_NONE,Point());//寻找并绘制轮廓
+    imshow("dst",dst);
     vector<Moments>mu(contours.size());
     for(int i=0;i<contours.size();i++)//最小外接矩形
     {
@@ -206,24 +206,19 @@ RotatedRect mineral::find_rect(Mat frame,int min_distance)
             putText(frame,_y,Point(rect.center.x-20,rect.center.y-50),FONT_HERSHEY_PLAIN,2,Scalar(0,255,0),2,8);
             //x=(float16_t)rect.center.x;
             //y=(float16_t)rect.center.y;
-            // line(frame,Point2f(frame.cols/2-20,frame.rows/2),Point2f(frame.cols/2+20,frame.rows/2),Scalar(255,255,255),2);
-            // line(frame,Point2f(frame.cols/2,frame.rows/2-20),Point2f(frame.cols/2,frame.rows/2+20),Scalar(255,255,255),2);
+            line(frame,Point2f(rect.center.x-10,rect.center.y),Point2f(rect.center.x+10,rect.center.y),Scalar(0,255,255),2);
+            line(frame,Point2f(rect.center.x,rect.center.y-10),Point2f(rect.center.x,rect.center.y-10),Scalar(0,255,255),2);
 
-            SerialPort::RMserialWrite((int16_t)rect.center.x,(int16_t)rect.center.y,min_distance);
-            //SerialPort::RMserialWrite(x,y);
+            // SerialPort::RMserialWrite((int16_t)rect.center.x,(int16_t)rect.center.y,min_distance);//串口发送
 
             return rect1;
         }
         
     }
     
-    //imshow("mask",ele);
-    
+    imshow("frame",frame);
 }
-// void mineral::lost_rect(RotatedRect rect) 
-// {
-//     for(int i=0;)
-// }
+
 bool mineral::profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev)
 {
     for (auto&& sp : prev)
@@ -295,7 +290,6 @@ void mineral::get_frame()
             continue;
         }
 
-        
         //pip_stream = pip_stream.adjust_ratio({ static_cast<float>(aligned_depth_frame.get_width()),static_cast<float>(aligned_depth_frame.get_height()) });
 
         //取深度图和彩色图
@@ -309,17 +303,21 @@ void mineral::get_frame()
         const int color_h=other_frame.as<video_frame>().get_height();
         const int depth_w_1=depth_frame_1.as<video_frame>().get_width();
         const int depth_h_1=depth_frame_1.as<video_frame>().get_height();
-        //cout<<"distance: "<<aligned_depth_frame.get_distance(depth_w/2,depth_h/2)<<"m"<<endl;
 
-        int min_distance=aligned_depth_frame.get_distance(depth_w/2,depth_h/2)*100;
-        int remove_min_distance=min_distance;
+        int min_distance=aligned_depth_frame.get_distance(depth_w/2,depth_h/2)*100;//cm
+
+        // int remove_min_distance=min_distance;
+        int remove_min_distance=20;
+
         int max_distance=min_distance+10;
-        if(min_distance>200)
+        
+        // if(min_distance>450)
         {
-            remove_min_distance=20;
+            // remove_min_distance=70;
             max_distance=100;
             //remove_background(other_frame, aligned_depth_frame, depth_scale,remove_min_distance,max_distance);
         }
+        cout<<"remove_min_distance: "<<remove_min_distance<<"cm"<<endl;
         remove_background(other_frame, aligned_depth_frame, depth_scale,remove_min_distance,max_distance);
         //remove_background(other_frame, aligned_depth_frame, depth_scale);
 
@@ -341,17 +339,13 @@ void mineral::get_frame()
         line(color_image,Point2f(color_image.cols/2,color_image.rows/2-20),Point2f(color_image.cols/2,color_image.rows/2+20),Scalar(255,255,255),2);
 
         //imshow("depth_image",depth_image);
-        
-        
 
         //imshow("depth_image_1",depth_image_1);
         //imshow("result",result);
 
         int rm_recive[3];
         
-        SerialPort::RMreceiveData(rm_recive);
-        // int *rm_recive=SerialPort::RMreceiveData(rm_recive);
-        // int switch_=*rm_recive;
+        // SerialPort::RMreceiveData(rm_recive);
         int key = waitKey(1);
         if(char(key) == 27)break;
         if(change==1)
@@ -363,37 +357,32 @@ void mineral::get_frame()
             imshow("1",src);
         }
 
-        // if(char(key) ==49)
-        // {
-        //     change=1;
-
-        // }else if(char(key) ==50)
-        // {
-        //     change=2;
-        // }
-        
-        if(rm_recive[1] ==1)
+        if(char(key) ==49)
         {
             change=1;
 
-        }else if(rm_recive[1] ==2)
+        }else if(char(key) ==50)
         {
             change=2;
         }
 
-        // for(int i=0;i<3;i++)
-        {
-            cout<<"rm_recive["<<1<<"]:"<<rm_recive[1]<<endl;
-
-        }
-        // if(switch_ ==1)
+        /*——————按键切换屏幕，串口读取——————*/
+        // if(rm_recive[1] ==1)
         // {
         //     change=1;
 
-        // }else if(switch_ ==2)
+        // }else if(rm_recive[1] ==2)
         // {
         //     change=2;
         // }
+
+        // for(int i=0;i<3;i++)
+        {
+            // cout<<"rm_recive["<<1<<"]:"<<rm_recive[1]<<endl;
+
+        }
+        /*——————————————————————————————*/
+
         //t=((double)cv::getTickCount()-t)/cv::getTickFrequency();
         //int fps=double(1.0/t);
         //cout<<"fps:"<<fps<<endl;

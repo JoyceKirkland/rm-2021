@@ -56,15 +56,18 @@ vector<cv::String> getOutputsNames(const cv::dnn::Net& net)
 }
 
 // Draw the predicted bounding box
-void drawPred(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame)
+void drawPred(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame,int min_distance)
 {
     //Draw a rectangle displaying the bounding box
     rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255));
- 
+    int center_x=left+(right-left)/2;
+    int center_y=top+(bottom-top)/2;
     //Get the label for the class name and its confidence
     string label = cv::format("%.2f", conf);
     char box_x[20];
     char box_y[20];
+    sprintf(box_x,"x=%d",center_x);
+    sprintf(box_y,"y=%d",center_y);
     if (!classes.empty())
     {
         CV_Assert(classId < (int)classes.size());
@@ -80,11 +83,15 @@ void drawPred(int classId, float conf, int left, int top, int right, int bottom,
     Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
     top = max(top, labelSize.height);
     putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+    putText(frame, box_x, Point(center_x, center_y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+    putText(frame, box_y, Point(center_x, center_y+20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+    cout<<"(x,y):"<<center_x<<","<<center_y<<endl;
+    SerialPort::RMserialWrite((int16_t)center_x,(int16_t)center_y,min_distance);
 
 }
 
 // Remove the bounding boxes with low confidence using non-maxima suppression
-void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs)
+void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs,int min_distance)
 {
     vector<int> classIds;
     vector<float> confidences;
@@ -129,16 +136,15 @@ void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs)
         int idx = indices[i];
         cv::Rect box = boxes[idx];
         drawPred(classIds[idx], confidences[idx], box.x, box.y,
-                 box.x + box.width, box.y + box.height, frame);
+                 box.x + box.width, box.y + box.height, frame,min_distance);
     }
 }
  
 
-
 int main(int argc, char** argv)
 {
     // Load names of classes
-    // SerialPort serialport;
+    SerialPort serialport;
 	int change=1;
     string classesFile = "voc_classes.txt";
     ifstream classNamesFile(classesFile.c_str());
@@ -165,7 +171,7 @@ int main(int argc, char** argv)
     // Process frames.
     std::cout <<"Processing..."<<std::endl;
 
-    VideoCapture cap(0);
+    VideoCapture cap(6);
     Mat src;
 	rs2::frame color_frame;
     rs2::frame depth_frame;
@@ -175,6 +181,7 @@ int main(int argc, char** argv)
     // float depth_scale = get_depth_scale(profile.get_device());
 
 	namedWindow("1",WINDOW_NORMAL);
+    setWindowProperty("1", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN );
 
     for(;;)
     {
@@ -209,7 +216,7 @@ int main(int argc, char** argv)
         net.forward(outs, getOutputsNames(net));
  
         // Remove the bounding boxes with low confidence
-        postprocess(color_image, outs);
+        postprocess(color_image, outs,min_distance);
  
         // Put efficiency information. The function getPerfProfile returns the
         // overall time for inference(t) and the timings for each of the layers(in layersTimes)

@@ -133,35 +133,6 @@ void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
 // #endif
 }
 
-// int* SerialPort::RMreceiveData(int *rec)
-// {
-//     memset(g_rec_buf, '0', (int)sizeof(rec)); //清空缓存
-//     char rec_buf_temp[REC_BUFF_LENGTH * 2];
-//     read(fd, rec, sizeof(rec));
-//     // for (int i = 0; i < (int)sizeof(rec_buf_temp); ++i)
-//     {
-//         // if (rec_buf_temp[i] == 'S' && rec_buf_temp[i + sizeof(g_rec_buf) - 1] == 'E')
-//         if (*rec-(int)*rec==0)
-//         {
-//             // for (int j = 0; j < ((int)sizeof(g_rec_buf)); ++j)
-//             {
-//                 // g_rec_buf[j] = rec_buf_temp[i + j];
-//                 return rec;
-//             }
-//             // break;
-//         }
-//     }
-//     // for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
-//     // {
-//     //     arr[i] = (g_rec_buf[i] - '0');
-//     // }
-//     tcflush(fd, TCIFLUSH);
-// #if SHOW_SERIAL_INFORMATION == 1
-//     cout << "  rec_buf_temp: " << rec_buf_temp << endl;
-//     cout << "  g_rec_buf: " << g_rec_buf << endl;
-// #endif
-// }
-
 
 /**
  *@brief: RM串口发送格式化函数
