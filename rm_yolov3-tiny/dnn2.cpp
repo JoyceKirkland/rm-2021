@@ -62,6 +62,8 @@ void drawPred(int classId, float conf, int left, int top, int right, int bottom,
     rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255));
     int center_x=left+(right-left)/2;
     int center_y=top+(bottom-top)/2;
+    float max_xy_to_center=0;
+
     //Get the label for the class name and its confidence
     string label = cv::format("%.2f", conf);
     char box_x[20];
@@ -85,7 +87,9 @@ void drawPred(int classId, float conf, int left, int top, int right, int bottom,
     putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
     putText(frame, box_x, Point(center_x, center_y), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
     putText(frame, box_y, Point(center_x, center_y+20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-    cout<<"(x,y):"<<center_x<<","<<center_y<<endl;
+    line(frame,Point2f((float)center_x,(float)center_y),Point2f(frame.cols/2,frame.rows/2),Scalar(0,255,255),2);
+
+    // cout<<"(x,y):"<<(int16_t)center_x<<","<<(int16_t)center_y<<endl;
     SerialPort::RMserialWrite((int16_t)center_x,(int16_t)center_y,min_distance);
 
 }
@@ -96,6 +100,11 @@ void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs,int min_distance)
     vector<int> classIds;
     vector<float> confidences;
     vector<Rect> boxes;
+    vector<float>xy_to_center;
+    float min_xy_to_center=0;
+    int index=0;
+
+    float temp_xy_to_center=0;
  
     for (size_t i = 0; i < outs.size(); ++i)
     {
@@ -124,26 +133,83 @@ void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs,int min_distance)
                 confidences.push_back((float)confidence);
                 boxes.push_back(cv::Rect(left, top, width, height));
             }
+
         }
     }
- 
+
     // Perform non maximum suppression to eliminate redundant overlapping boxes with
     // lower confidences
     vector<int> indices;
     dnn::NMSBoxes(boxes, confidences, confThreshold, nmsThreshold, indices);
+
     for (size_t i = 0; i < indices.size(); ++i)
     {
         int idx = indices[i];
+        int center_x1=(2*boxes[idx].x+boxes[idx].width)/2;
+        int center_y1=(2*boxes[idx].y+boxes[idx].height)/2;
+        // line(frame,Point2f((float)center_x1,(float)center_y1),Point2f(frame.cols/2,frame.rows/2),Scalar(255,255,255),2);
+        temp_xy_to_center=sqrt(pow(center_x1-frame.cols/2,2)+pow(center_y1-frame.rows/2,2));
+        xy_to_center.push_back(temp_xy_to_center);
+        cout<<"xy_to_center["<<i<<"]:"<<xy_to_center[i]<<endl;
+        min_xy_to_center=xy_to_center[0];
+
+    }
+    line(frame,Point2f(frame.cols/2-20,frame.rows/2),Point2f(frame.cols/2+20,frame.rows/2),Scalar(255,255,255),2);
+    line(frame,Point2f(frame.cols/2,frame.rows/2-20),Point2f(frame.cols/2,frame.rows/2+20),Scalar(255,255,255),2);
+
+        for(size_t i=0;i<indices.size();i++)
+        {
+            // cout<<"xy_to_center["<<i<<"]:"<<xy_to_center[i]<<endl;
+            if(xy_to_center[i]<min_xy_to_center)
+            {
+                min_xy_to_center=xy_to_center[i];
+                index=i;
+            }
+
+        }
+        cout<<"min_xy_to_center:"<<min_xy_to_center<<endl;
+        cout<<"index:"<<index<<endl;
+
+    for (size_t i = 0; i < indices.size(); ++i)
+    {
+        int idx = indices[index];
         cv::Rect box = boxes[idx];
         drawPred(classIds[idx], confidences[idx], box.x, box.y,
                  box.x + box.width, box.y + box.height, frame,min_distance);
+        // cout<<"idx["<<i<<"]:"<<idx<<endl;
     }
+
 }
- 
+int find_capture()//choose the useful id of VideoCapture
+{
+    int cap_index=-1;
+    int caps[6]={0,1,3,5,6,7};  
+    // VideoCapture cap(NULL);
+    Mat find_src;
+    for(int i=0;i<6;i++)
+    { 
+        cap_index=caps[i];
+        VideoCapture cap_f(cap_index);
+        for(int i=0;i<10;i++)
+        {
+            cap_f>>find_src;
+        }
+        if(!find_src.empty())
+        {
+            cout<<"cap_index:"<<cap_index<<endl;
+            // cap_index++;
+            break;
+        }
+    }
+    return cap_index;
+}
 
 int main(int argc, char** argv)
 {
     // Load names of classes
+    //________choose the id of VideoCapture_______//
+    int cap_index=find_capture();
+    
     SerialPort serialport;
 	int change=1;
     string classesFile = "voc_classes.txt";
@@ -156,8 +222,7 @@ int main(int argc, char** argv)
     }
     else{
         std::cout<<"can not open classNamesFile"<<std::endl;
-    }
- 
+    } 
     // Give the configuration and weight files for the model
     String modelConfiguration = "yolov3-tiny.cfg";
     String modelWeights = "yolov3-tiny_final.weights";
@@ -171,7 +236,7 @@ int main(int argc, char** argv)
     // Process frames.
     std::cout <<"Processing..."<<std::endl;
 
-    VideoCapture cap(6);
+    VideoCapture cap(cap_index);
     Mat src;
 	rs2::frame color_frame;
     rs2::frame depth_frame;
@@ -181,8 +246,7 @@ int main(int argc, char** argv)
     // float depth_scale = get_depth_scale(profile.get_device());
 
 	namedWindow("1",WINDOW_NORMAL);
-    setWindowProperty("1", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN );
-
+    setWindowProperty("1", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);    
     for(;;)
     {
         // get frame from the video
@@ -234,7 +298,9 @@ int main(int argc, char** argv)
 		int fps = int(1.0 / t1);//转换为帧率
 		cout << "FPS: " << fps<<endl;//输出帧率
         // imshow("detectedFrame",detectedFrame);
-
+        int rm_recive[3];
+        
+        SerialPort::RMreceiveData(rm_recive);
 		int key = waitKey(1);
         if(char(key) == 27)break;
         if(change==1)

@@ -193,7 +193,7 @@ void SerialPort::RMserialWrite(int16_t rect_x,int16_t rect_y,int16_t min_distanc
     11：CRC
     12：帧尾
     */
-    //cout<<"x:"<<rect_x<<",y:"<<rect_y<<endl;
+    cout<<"x:"<<rect_x<<",y:"<<rect_y<<endl;
     write(fd, g_write_buf, sizeof(g_write_buf));
     
 // #if SHOW_SERIAL_INFORMATION == 0
