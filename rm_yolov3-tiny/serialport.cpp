@@ -122,14 +122,14 @@ void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
         arr[i] = (g_rec_buf[i]);
     }
 
-    for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
+    // for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
     {
-        cout << "  arr["<<i<<"]: " << arr[i] << endl;
+        // cout << "  arr["<<i<<"]: " << arr[i] << endl;
     }
     tcflush(fd, TCIFLUSH);
 // #if SHOW_SERIAL_INFORMATION == 1
-    cout << "  rec_buf_temp: " << rec_buf_temp << endl;
-    cout << "  g_rec_buf: " << g_rec_buf << endl;
+    // cout << "  rec_buf_temp: " << rec_buf_temp << endl;
+    // cout << "  g_rec_buf: " << g_rec_buf << endl;
 // #endif
 }
 
@@ -193,7 +193,7 @@ void SerialPort::RMserialWrite(int16_t rect_x,int16_t rect_y,int16_t min_distanc
     11：CRC
     12：帧尾
     */
-    cout<<"x:"<<rect_x<<",y:"<<rect_y<<endl;
+    // cout<<"x:"<<rect_x<<",y:"<<rect_y<<endl;
     write(fd, g_write_buf, sizeof(g_write_buf));
     
 // #if SHOW_SERIAL_INFORMATION == 0

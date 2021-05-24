@@ -35,7 +35,7 @@ int inpHeight = 416;       // Height of network's input image
 vector<std::string> classes;
 
 
-// Get the names of the output layers
+//获取输出层的名称
 vector<cv::String> getOutputsNames(const cv::dnn::Net& net)
 {
     static std::vector<cv::String> names;
@@ -55,16 +55,15 @@ vector<cv::String> getOutputsNames(const cv::dnn::Net& net)
     return names;
 }
 
-// Draw the predicted bounding box
 void drawPred(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame,int min_distance)
 {
-    //Draw a rectangle displaying the bounding box
-    rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255));
+    //画矩形框
+    rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255),2);
     int center_x=left+(right-left)/2;
     int center_y=top+(bottom-top)/2;
     float max_xy_to_center=0;
 
-    //Get the label for the class name and its confidence
+    //获取类标签名称和置信度
     string label = cv::format("%.2f", conf);
     char box_x[20];
     char box_y[20];
@@ -80,7 +79,6 @@ void drawPred(int classId, float conf, int left, int top, int right, int bottom,
         cout<<"classes is empty..."<<endl;
     }
  
-    //Display the label at the top of the bounding box
     int baseLine;
     Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
     top = max(top, labelSize.height);
@@ -94,7 +92,6 @@ void drawPred(int classId, float conf, int left, int top, int right, int bottom,
 
 }
 
-// Remove the bounding boxes with low confidence using non-maxima suppression
 void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs,int min_distance)
 {
     vector<int> classIds;
@@ -108,9 +105,6 @@ void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs,int min_distance)
  
     for (size_t i = 0; i < outs.size(); ++i)
     {
-        // Scan through all the bounding boxes output from the network and keep only the
-        // ones with high confidence scores. Assign the box's class label as the class
-        // with the highest score for the box.
         float* data = (float*)outs[i].data;
         for (int j = 0; j < outs[i].rows; ++j, data += outs[i].cols)
         {
@@ -150,12 +144,12 @@ void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs,int min_distance)
         // line(frame,Point2f((float)center_x1,(float)center_y1),Point2f(frame.cols/2,frame.rows/2),Scalar(255,255,255),2);
         temp_xy_to_center=sqrt(pow(center_x1-frame.cols/2,2)+pow(center_y1-frame.rows/2,2));
         xy_to_center.push_back(temp_xy_to_center);
-        cout<<"xy_to_center["<<i<<"]:"<<xy_to_center[i]<<endl;
+        // cout<<"xy_to_center["<<i<<"]:"<<xy_to_center[i]<<endl;
         min_xy_to_center=xy_to_center[0];
 
     }
-    line(frame,Point2f(frame.cols/2-20,frame.rows/2),Point2f(frame.cols/2+20,frame.rows/2),Scalar(255,255,255),2);
-    line(frame,Point2f(frame.cols/2,frame.rows/2-20),Point2f(frame.cols/2,frame.rows/2+20),Scalar(255,255,255),2);
+    // line(frame,Point2f(frame.cols/2-20,frame.rows/2),Point2f(frame.cols/2+20,frame.rows/2),Scalar(255,255,255),2);
+    // line(frame,Point2f(frame.cols/2,frame.rows/2-20),Point2f(frame.cols/2,frame.rows/2+20),Scalar(255,255,255),2);
 
         for(size_t i=0;i<indices.size();i++)
         {
@@ -167,8 +161,7 @@ void postprocess(cv::Mat& frame, std::vector<cv::Mat>& outs,int min_distance)
             }
 
         }
-        cout<<"min_xy_to_center:"<<min_xy_to_center<<endl;
-        cout<<"index:"<<index<<endl;
+        // cout<<"min_xy_to_center:"<<min_xy_to_center<<endl;
 
     for (size_t i = 0; i < indices.size(); ++i)
     {
@@ -184,7 +177,6 @@ int find_capture()//choose the useful id of VideoCapture
 {
     int cap_index=-1;
     int caps[6]={0,1,3,5,6,7};  
-    // VideoCapture cap(NULL);
     Mat find_src;
     for(int i=0;i<6;i++)
     { 
@@ -203,14 +195,11 @@ int find_capture()//choose the useful id of VideoCapture
     }
     return cap_index;
 }
-
-int main(int argc, char** argv)
+void find_mineral()
 {
-    // Load names of classes
-    //________choose the id of VideoCapture_______//
-    int cap_index=find_capture();
+    // int cap_index=find_capture();
     
-    SerialPort serialport;
+    // SerialPort serialport;
 	int change=1;
     string classesFile = "voc_classes.txt";
     ifstream classNamesFile(classesFile.c_str());
@@ -223,21 +212,23 @@ int main(int argc, char** argv)
     else{
         std::cout<<"can not open classNamesFile"<<std::endl;
     } 
-    // Give the configuration and weight files for the model
+    // 加载模型
     String modelConfiguration = "yolov3-tiny.cfg";
-    String modelWeights = "yolov3-tiny_final.weights";
+    // String modelWeights = "yolov3-tiny_final.weights";
+    String modelWeights = "yolov3-tiny_final_1178rgb.weights";
+
  
-    // Load the network
+    // 加载网络
     dnn::Net net = dnn::readNetFromDarknet(modelConfiguration, modelWeights);
     std::cout<<"Read Darknet..."<<std::endl;
     net.setPreferableBackend(dnn::DNN_BACKEND_OPENCV);
     net.setPreferableTarget(dnn::DNN_TARGET_CPU);
  
     // Process frames.
-    std::cout <<"Processing..."<<std::endl;
+    cout <<"Processing..."<<endl;
 
-    VideoCapture cap(cap_index);
-    Mat src;
+    // VideoCapture cap(cap_index);
+    Mat src;  
 	rs2::frame color_frame;
     rs2::frame depth_frame;
 	colorizer c;   // 帮助着色深度图像
@@ -245,14 +236,15 @@ int main(int argc, char** argv)
     pipeline_profile profile = pipe.start(); //start()函数返回数据管道的profile
     // float depth_scale = get_depth_scale(profile.get_device());
 
+    Mat image_roi;
 	namedWindow("1",WINDOW_NORMAL);
-    setWindowProperty("1", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);    
+    // setWindowProperty("1", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);    
     for(;;)
     {
         // get frame from the video
 		frameset frameset = pipe.wait_for_frames();  //堵塞程序直到新的一帧捕获
 
-        cap >> src;
+        // cap >> src;
 		double t1 = (double)cv::getTickCount();
 		rs2::video_frame video_src=frameset.get_color_frame();
 		rs2::depth_frame depth = frameset.get_depth_frame();
@@ -268,36 +260,40 @@ int main(int argc, char** argv)
         int min_distance=depth.get_distance(width/2,height/2)*100;//cm
         // cout<<"min_distance: "<<min_distance<<"cm"<<endl;
 		 
-        // Create a 4D blob from a frame.
+
+        // image_roi=color_image(Rect(0,80,color_image.cols*0.5,color_image.rows*0.5));
+        line(image_roi,Point2f(image_roi.cols/2-20,image_roi.rows/2),Point2f(image_roi.cols/2+20,image_roi.rows/2),Scalar(255,255,255),2);
+        line(image_roi,Point2f(image_roi.cols/2,image_roi.rows/2-20),Point2f(image_roi.cols/2,image_roi.rows/2+20),Scalar(255,255,255),2);
+
+        // imshow("2",image_roi);
+        // 进行预处理，创建4D blob
         Mat blob;
         dnn::blobFromImage(color_image, blob, 1/255.0, Size(inpWidth, inpHeight), Scalar(0,0,0), true, false);
+        // dnn::blobFromImage(image_roi, blob, 1/255.0, Size(inpWidth, inpHeight), Scalar(0,0,0), true, false);
  
-        //Sets the input to the network
+        //设置网络输入
         net.setInput(blob);
  
-        // Runs the forward pass to get output of the output layers
+        //获取输出层的输出
         vector<Mat> outs;
         net.forward(outs, getOutputsNames(net));
  
-        // Remove the bounding boxes with low confidence
+        //矩形框筛选
         postprocess(color_image, outs,min_distance);
+        // postprocess(image_roi, outs,min_distance);
  
-        // Put efficiency information. The function getPerfProfile returns the
-        // overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        vector<double> layersTimes;
-        double freq = getTickFrequency() / 1000;
-        double t = net.getPerfProfile(layersTimes) / freq;
-        string label = format("Inference time for a frame : %.2f ms", t);
-        putText(color_image, label, Point(0, 15), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
- 
-        // Write the frame with the detection boxes
-        Mat detectedFrame;
-        color_image.convertTo(detectedFrame, CV_8U);
-        //show detectedFrame
+        
+        // Mat detectedFrame;
+        // color_image.convertTo(detectedFrame, CV_8U);
 		t1 = ((double)getTickCount() - t1) / getTickFrequency();
 		int fps = int(1.0 / t1);//转换为帧率
-		cout << "FPS: " << fps<<endl;//输出帧率
+		// cout << "FPS: " << fps<<endl;//输出帧率
         // imshow("detectedFrame",detectedFrame);
+        char output_fps[20];
+        sprintf(output_fps,"fps:%d",fps);
+        putText(color_image, output_fps, Point(0, 35), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
+        // putText(image_roi, output_fps, Point(0, 35), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
+
         int rm_recive[3];
         
         SerialPort::RMreceiveData(rm_recive);
@@ -305,21 +301,23 @@ int main(int argc, char** argv)
         if(char(key) == 27)break;
         if(change==1)
         {
-            imshow("1",detectedFrame);
+            imshow("1",color_image);
+            // imshow("1",image_roi);
+
         }
-        else if(change==2)
+        // else if(change==2)
         {
-            imshow("1",src);
+            // imshow("1",src);
         }
 
-        if(char(key) ==49)
-        {
-            change=1;
+        // if(char(key) ==49)
+        // {
+        //     change=1;
 
-        }else if(char(key) ==50)
-        {
-            change=2;
-        }
+        // }else if(char(key) ==50)
+        // {
+        //     change=2;
+        // }
 
         /*——————按键切换屏幕，串口读取——————*/
         // if(rm_recive[1] ==1)
@@ -332,7 +330,137 @@ int main(int argc, char** argv)
         // }
 		
     }
-    cap.release();
+    // cap.release();
     cout<<"Esc..."<<endl;
+}
+
+int main(int argc, char** argv)
+{
+    // Load names of classes
+    //________choose the id of VideoCapture_______//
+    // int cap_index=find_capture();
+    
+    // SerialPort serialport;
+	// int change=1;
+    // string classesFile = "voc_classes.txt";
+    // ifstream classNamesFile(classesFile.c_str());
+    // if (classNamesFile.is_open())
+    // {
+    //     string className = "";
+    //     while (std::getline(classNamesFile, className))
+    //         classes.push_back(className);
+    // }
+    // else{
+    //     std::cout<<"can not open classNamesFile"<<std::endl;
+    // } 
+    // // Give the configuration and weight files for the model
+    // String modelConfiguration = "yolov3-tiny.cfg";
+    // String modelWeights = "yolov3-tiny_final.weights";
+ 
+    // // Load the network
+    // dnn::Net net = dnn::readNetFromDarknet(modelConfiguration, modelWeights);
+    // std::cout<<"Read Darknet..."<<std::endl;
+    // net.setPreferableBackend(dnn::DNN_BACKEND_OPENCV);
+    // net.setPreferableTarget(dnn::DNN_TARGET_CPU);
+ 
+    // // Process frames.
+    // cout <<"Processing..."<<endl;
+
+    // VideoCapture cap(cap_index);
+    // Mat src;
+	// rs2::frame color_frame;
+    // rs2::frame depth_frame;
+	// colorizer c;   // 帮助着色深度图像
+    // pipeline pipe;         //创建数据管道
+    // pipeline_profile profile = pipe.start(); //start()函数返回数据管道的profile
+    // // float depth_scale = get_depth_scale(profile.get_device());
+
+	// namedWindow("1",WINDOW_NORMAL);
+    // setWindowProperty("1", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);    
+    // for(;;)
+    // {
+    //     // get frame from the video
+	// 	frameset frameset = pipe.wait_for_frames();  //堵塞程序直到新的一帧捕获
+
+    //     cap >> src;
+	// 	double t1 = (double)cv::getTickCount();
+	// 	rs2::video_frame video_src=frameset.get_color_frame();
+	// 	rs2::depth_frame depth = frameset.get_depth_frame();
+
+    //     frameset.get_data();
+	// 	float width=depth.get_width();
+	// 	float height=depth.get_height();
+    //     const int color_w=video_src.as<video_frame>().get_width();
+    //     const int color_h=video_src.as<video_frame>().get_height();
+    //     Mat color_image(Size(color_w,color_h),
+    //                     CV_8UC3,(void*)video_src.get_data(),Mat::AUTO_STEP);
+	// 	cvtColor(color_image,color_image,COLOR_RGB2BGR);
+    //     int min_distance=depth.get_distance(width/2,height/2)*100;//cm
+    //     // cout<<"min_distance: "<<min_distance<<"cm"<<endl;
+		 
+    //     // Create a 4D blob from a frame.
+    //     Mat blob;
+    //     dnn::blobFromImage(color_image, blob, 1/255.0, Size(inpWidth, inpHeight), Scalar(0,0,0), true, false);
+ 
+    //     //Sets the input to the network
+    //     net.setInput(blob);
+ 
+    //     // Runs the forward pass to get output of the output layers
+    //     vector<Mat> outs;
+    //     net.forward(outs, getOutputsNames(net));
+ 
+    //     // Remove the bounding boxes with low confidence
+    //     postprocess(color_image, outs,min_distance);
+ 
+    //     // Write the frame with the detection boxes
+    //     Mat detectedFrame;
+    //     color_image.convertTo(detectedFrame, CV_8U);
+    //     //show detectedFrame
+	// 	t1 = ((double)getTickCount() - t1) / getTickFrequency();
+	// 	int fps = int(1.0 / t1);//转换为帧率
+	// 	// cout << "FPS: " << fps<<endl;//输出帧率
+    //     // imshow("detectedFrame",detectedFrame);
+    //     char output_fps[20];
+    //     sprintf(output_fps,"fps:%d",fps);
+    //     putText(detectedFrame, output_fps, Point(0, 35), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 0, 255));
+
+    //     int rm_recive[3];
+        
+    //     SerialPort::RMreceiveData(rm_recive);
+	// 	int key = waitKey(1);
+    //     if(char(key) == 27)break;
+    //     if(change==1)
+    //     {
+    //         imshow("1",detectedFrame);
+    //     }
+    //     else if(change==2)
+    //     {
+    //         imshow("1",src);
+    //     }
+
+    //     if(char(key) ==49)
+    //     {
+    //         change=1;
+
+    //     }else if(char(key) ==50)
+    //     {
+    //         change=2;
+    //     }
+
+    //     /*——————按键切换屏幕，串口读取——————*/
+    //     // if(rm_recive[1] ==1)
+    //     // {
+    //     //     change=1;
+
+    //     // }else if(rm_recive[1] ==2)
+    //     // {
+    //     //     change=2;
+    //     // }
+		
+    // }
+    // cap.release();
+    // cout<<"Esc..."<<endl;
+    SerialPort serialport;
+    find_mineral();
     return 0;
 }
