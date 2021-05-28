@@ -1,4 +1,4 @@
-/**
+	/**
  * @file serialport.cpp
  * @author GCUROBOT-Visual-Group (GCUROBOT_WOLF@163.com)
  * @brief
@@ -36,59 +36,54 @@ int16_t SerialPort::_depth_reduction = 0x0000;
 */ 
 SerialPort::SerialPort()
 {
-    cout << "The Serial set ......" << endl;
-    const char *DeviceName[4] = {"", "/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2"};
-
-    /* WARNING :  终端设备默认会设置为控制终端，因此open(O_NOCTTY不作为控制终端)
-     * Terminals'll default to be set as Control Terminals
-     */
-    struct termios newstate;
-    /*打开串口*/
-    bzero(&newstate, sizeof(newstate)); //清零
-    for (size_t i = 0; i < (sizeof(DeviceName) / sizeof(char *)); ++i)
-    {
-        fd = open(DeviceName[i], O_RDWR | O_NONBLOCK | O_NOCTTY | O_NDELAY);
-        if (fd == -1)
-        {
-            printf("Can't Open Serial Port %s\n", DeviceName[i]);
-            continue;
-        }
-        else
-        {
-            printf("Open Serial Port %s Successful\n", DeviceName[i]);
-            break;
-        }
-    }
-    cfsetospeed(&newstate, B115200);
-    cfsetispeed(&newstate, B115200);
-
-    //本地连线, 取消控制功能 | 开始接收
-    newstate.c_cflag |= CLOCAL | CREAD;
-    //设置字符大小
-    newstate.c_cflag &= ~CSIZE;
-    //设置停止位1
-    newstate.c_cflag &= ~CSTOPB;
-    //设置数据位8位
-    newstate.c_cflag |= CS8;
-    //设置无奇偶校验位，N
-    newstate.c_cflag &= ~PARENB;
-
-    /*阻塞模式的设置*/
-    newstate.c_cc[VTIME] = 0;
-    newstate.c_cc[VMIN] = 0;
-
-    /*清空当前串口*/
-    tcflush(fd, TCIOFLUSH);
-    tcsetattr(fd, TCSANOW, &newstate);
+  cout << "The Serial set ......" << endl;
+  const char *DeviceName[4] = {"", "/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2"};
+  /* WARNING :  终端设备默认会设置为控制终端，因此open(O_NOCTTY不作为控制终端)
+   * Terminals'll default to be set as Control Terminals
+   */
+  struct termios newstate;
+  /*打开串口*/
+  bzero(&newstate, sizeof(newstate)); //清零
+  for (size_t i = 0; i < (sizeof(DeviceName) / sizeof(char *)); ++i)
+  {
+      fd = open(DeviceName[i], O_RDWR | O_NONBLOCK | O_NOCTTY | O_NDELAY);
+      if (fd == -1)
+      {
+          printf("Can't Open Serial Port %s\n", DeviceName[i]);
+          continue;
+      }
+      else
+      {
+          printf("Open Serial Port %s Successful\n", DeviceName[i]);
+          break;
+      }
+  }
+  cfsetospeed(&newstate, B115200);
+  cfsetispeed(&newstate, B115200);
+  //本地连线, 取消控制功能 | 开始接收
+  newstate.c_cflag |= CLOCAL | CREAD;
+  //设置字符大小
+  newstate.c_cflag &= ~CSIZE;
+  //设置停止位1
+  newstate.c_cflag &= ~CSTOPB;
+  //设置数据位8位
+  newstate.c_cflag |= CS8;
+  //设置无奇偶校验位，N
+  newstate.c_cflag &= ~PARENB;
+  /*阻塞模式的设置*/
+  newstate.c_cc[VTIME] = 0;
+  newstate.c_cc[VMIN] = 0;
+  /*清空当前串口*/
+  tcflush(fd, TCIOFLUSH);
+  tcsetattr(fd, TCSANOW, &newstate);
 }
-
 /**
  * @brief Destroy the Serial Port:: Serial Port object
  */
 SerialPort::~SerialPort(void)
 {
-    if (!close(fd))
-        printf("Close Serial Port Successful\n");
+  if (!close(fd))
+      printf("Close Serial Port Successful\n");
 }
 
 /**
@@ -102,65 +97,35 @@ SerialPort::~SerialPort(void)
 
 void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
 {
-    memset(g_rec_buf, '0', REC_BUFF_LENGTH); //清空缓存
-    char rec_buf_temp[REC_BUFF_LENGTH * 2];
-    read(fd, rec_buf_temp, sizeof(rec_buf_temp));
-    for (int i = 0; i < (int)sizeof(rec_buf_temp); ++i)
-    {
-        if (rec_buf_temp[i] == 'S' && rec_buf_temp[i + sizeof(g_rec_buf) - 1] == 'E')
-        // if (rec_buf_temp[i]-(int)rec_buf_temp[i]==0)
-        {
-            for (int j = 0; j < ((int)sizeof(g_rec_buf)); ++j)
-            {
-                g_rec_buf[j] = rec_buf_temp[i + j];
-            }
-            break;
-        }
-    }
-    for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
-    {
-        arr[i] = (g_rec_buf[i]);
-    }
-
-    // for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
-    {
-        // cout << "  arr["<<i<<"]: " << arr[i] << endl;
-    }
-    tcflush(fd, TCIFLUSH);
+  memset(g_rec_buf, '0', REC_BUFF_LENGTH); //清空缓存
+  char rec_buf_temp[REC_BUFF_LENGTH * 2];
+  read(fd, rec_buf_temp, sizeof(rec_buf_temp));
+  for (int i = 0; i < (int)sizeof(rec_buf_temp); ++i)
+  {
+      if (rec_buf_temp[i] == 'S' && rec_buf_temp[i + sizeof(g_rec_buf) - 1] == 'E')
+      // if (rec_buf_temp[i]-(int)rec_buf_temp[i]==0)
+      {
+          for (int j = 0; j < ((int)sizeof(g_rec_buf)); ++j)
+          {
+              g_rec_buf[j] = rec_buf_temp[i + j];
+          }
+          break;
+      }
+  }
+  for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
+  {
+      arr[i] = (g_rec_buf[i]);
+  }
+  // for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
+  {
+      // cout << "  arr["<<i<<"]: " << arr[i] << endl;
+  }
+  tcflush(fd, TCIFLUSH);
 // #if SHOW_SERIAL_INFORMATION == 1
     // cout << "  rec_buf_temp: " << rec_buf_temp << endl;
     // cout << "  g_rec_buf: " << g_rec_buf << endl;
 // #endif
 }
-
-// int* SerialPort::RMreceiveData(int *rec)
-// {
-//     memset(g_rec_buf, '0', (int)sizeof(rec)); //清空缓存
-//     char rec_buf_temp[REC_BUFF_LENGTH * 2];
-//     read(fd, rec, sizeof(rec));
-//     // for (int i = 0; i < (int)sizeof(rec_buf_temp); ++i)
-//     {
-//         // if (rec_buf_temp[i] == 'S' && rec_buf_temp[i + sizeof(g_rec_buf) - 1] == 'E')
-//         if (*rec-(int)*rec==0)
-//         {
-//             // for (int j = 0; j < ((int)sizeof(g_rec_buf)); ++j)
-//             {
-//                 // g_rec_buf[j] = rec_buf_temp[i + j];
-//                 return rec;
-//             }
-//             // break;
-//         }
-//     }
-//     // for (size_t i = 0; i < sizeof(g_rec_buf); ++i)
-//     // {
-//     //     arr[i] = (g_rec_buf[i] - '0');
-//     // }
-//     tcflush(fd, TCIFLUSH);
-// #if SHOW_SERIAL_INFORMATION == 1
-//     cout << "  rec_buf_temp: " << rec_buf_temp << endl;
-//     cout << "  g_rec_buf: " << g_rec_buf << endl;
-// #endif
-// }
 
 
 /**
@@ -178,24 +143,24 @@ void SerialPort::RMreceiveData(int arr[REC_BUFF_LENGTH])
  */
 void SerialPort::RMserialWrite(int16_t rect_x,int16_t rect_y,int16_t min_distance)
 {
-    // sprintf(g_CRC_buf, "%c%1d%1d%1d%04d%1d%03d%04d", 'S', data_type, is_shooting, _yaw ,yaw, _pitch, pitch, depth);
-    // getDataForCRC(data_type, is_shooting, _yaw, yaw, _pitch, pitch, depth);
-    getDataForCRC(rect_x, rect_y,min_distance);
-    // cout<<"distance:"<<min_distance<<endl;
-    
-    uint8_t CRC = Checksum_CRC8(g_CRC_buf, sizeof(g_CRC_buf));
-    getDataForSend(rect_x,rect_y,min_distance,CRC);
-    /*
-    0：帧头     1：是否正确识别的标志   2：是否射击的信号
-    3：yaw正负值    4：yaw低八位数据    5：yaw高八位数据
-    6：pitch正负值  7：pitch低八位数据  8：pitch高八位数据
-    9：深度低八位   10：深度高八位
-    11：CRC
-    12：帧尾
-    */
-    // cout<<"x:"<<rect_x<<",y:"<<rect_y<<endl;
-    write(fd, g_write_buf, sizeof(g_write_buf));
-    
+  // sprintf(g_CRC_buf, "%c%1d%1d%1d%04d%1d%03d%04d", 'S', data_type, is_shooting, _yaw ,yaw, _pitch, pitch, depth);
+  // getDataForCRC(data_type, is_shooting, _yaw, yaw, _pitch, pitch, depth);
+  getDataForCRC(rect_x, rect_y,min_distance);
+  // cout<<"distance:"<<min_distance<<endl;
+  
+  uint8_t CRC = Checksum_CRC8(g_CRC_buf, sizeof(g_CRC_buf));
+  getDataForSend(rect_x,rect_y,min_distance,CRC);
+  /*
+  0：帧头     1：是否正确识别的标志   2：是否射击的信号
+  3：yaw正负值    4：yaw低八位数据    5：yaw高八位数据
+  6：pitch正负值  7：pitch低八位数据  8：pitch高八位数据
+  9：深度低八位   10：深度高八位
+  11：CRC
+  12：帧尾
+  */
+  // cout<<"x:"<<rect_x<<",y:"<<rect_y<<endl;
+  write(fd, g_write_buf, sizeof(g_write_buf));
+	
 // #if SHOW_SERIAL_INFORMATION == 0
 
 //     _yaw_reduction = (g_write_buf[5] << 8) | _yaw_reduction;
@@ -209,7 +174,7 @@ void SerialPort::RMserialWrite(int16_t rect_x,int16_t rect_y,int16_t min_distanc
 
 // #if SERIAL_COMMUNICATION_PLAN == 1
 //     cout << "g_write_buf=  " << g_write_buf[0]
-//          << "  " << static_cast<int>(g_write_buf[1])
+//          << "  " << static_cast<int>(g_write_buf[1])	
 //          << "  " << static_cast<int>(g_write_buf[2])
 //          << "  " << static_cast<int>(g_write_buf[3]) << "  " << float(_yaw_reduction) / 100
 //          << "  " << static_cast<int>(g_write_buf[6]) << "  " << float(_pitch_reduction) / 100
@@ -242,47 +207,41 @@ void SerialPort::RMserialWrite(int16_t rect_x,int16_t rect_y,int16_t min_distanc
  */
 uint8_t SerialPort::Checksum_CRC8(unsigned char *buf, uint16_t len)
 {
-    uint8_t check = 0;
-
-    while (len--)
-    {
-        check = CRC8Tab[check ^ (*buf++)];
-    }
-
-    return (check)&0x00ff;
+  uint8_t check = 0;
+  while (len--)
+  {
+      check = CRC8Tab[check ^ (*buf++)];
+  }
+  return (check)&0x00ff;
 }
 
 void SerialPort::getDataForCRC(int16_t rect_x,int16_t rect_y,int16_t min_distance)
 {
-    g_CRC_buf[0] = 0x53;
-    g_CRC_buf[1] = (rect_x >> 8) & 0xff;
-    g_CRC_buf[2] = (rect_x)&0xff;
-    g_CRC_buf[3] = (rect_y >> 8) & 0xff;
-    g_CRC_buf[4] = (rect_y)&0xff;
-    g_CRC_buf[5] = (min_distance >> 8) &0xff;
-    g_CRC_buf[6] = (min_distance)&0xff;
-    // rect_x=g_CRC_buf[1]<<8 | g_CRC_buf[2];
-    // rect_y=g_CRC_buf[3]<<8 | g_CRC_buf[4];
-
-    // cout<<"CRC:"<<rect_x<<","<<rect_y<<endl;
+  g_CRC_buf[0] = 0x53;
+  g_CRC_buf[1] = (rect_x >> 8) & 0xff;
+  g_CRC_buf[2] = (rect_x)&0xff;
+  g_CRC_buf[3] = (rect_y >> 8) & 0xff;
+  g_CRC_buf[4] = (rect_y)&0xff;
+  g_CRC_buf[5] = (min_distance >> 8) &0xff;
+  g_CRC_buf[6] = (min_distance)&0xff;
+  // rect_x=g_CRC_buf[1]<<8 | g_CRC_buf[2];
+  // rect_y=g_CRC_buf[3]<<8 | g_CRC_buf[4];
+  // cout<<"CRC:"<<rect_x<<","<<rect_y<<endl;
 
 }
 
 void SerialPort::getDataForSend(int16_t rect_x,int16_t rect_y,int16_t min_distance,uint8_t CRC)
 {
-    g_write_buf[0] = 0x53;
-    g_write_buf[1] = (rect_x >> 8) & 0xff;
-    g_write_buf[2] = (rect_x) & 0xff;
-    g_write_buf[3] = (rect_y >> 8) & 0xff;
-    g_write_buf[4] = (rect_y) & 0xff;
-    g_write_buf[5] = (min_distance >> 8) &0xff;
-    g_write_buf[6] = (min_distance)&0xff;
-    g_write_buf[7] = CRC & 0xff;
-    g_write_buf[8] = 0x45;
-
-    // rect_x=g_write_buf[1]<<8 | g_write_buf[2];
-    // rect_y=g_write_buf[3]<<8 | g_write_buf[4];
-
-    // cout<<rect_x<<","<<rect_y<<endl;
-
+  g_write_buf[0] = 0x53;
+  g_write_buf[1] = (rect_x >> 8) & 0xff;
+  g_write_buf[2] = (rect_x) & 0xff;
+  g_write_buf[3] = (rect_y >> 8) & 0xff;
+  g_write_buf[4] = (rect_y) & 0xff;
+  g_write_buf[5] = (min_distance >> 8) &0xff;
+  g_write_buf[6] = (min_distance)&0xff;
+  g_write_buf[7] = CRC & 0xff;
+  g_write_buf[8] = 0x45;
+  // rect_x=g_write_buf[1]<<8 | g_write_buf[2];
+  // rect_y=g_write_buf[3]<<8 | g_write_buf[4];
+  // cout<<rect_x<<","<<rect_y<<endl;
 }
