@@ -1,13 +1,13 @@
 /*
  * @Author: joyce
  * @Date: 2021-05-29 14:22:39
- * @LastEditTime: 2021-05-30 11:32:35
+ * @LastEditTime: 2021-05-30 16:39:43
  * @LastEditors: Please set LastEditors
  * @Description:: 
  */
 
 // #include "depth_camera.h"
-#include "depth_camera.cpp"
+#include "depth_camera/depth_camera.cpp"
 
 int main()
 {
