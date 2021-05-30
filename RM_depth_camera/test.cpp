@@ -1,7 +1,7 @@
 /*
  * @Author: joyce
  * @Date: 2021-05-29 14:22:39
- * @LastEditTime: 2021-05-29 22:04:06
+ * @LastEditTime: 2021-05-30 11:07:22
  * @LastEditors: Please set LastEditors
  * @Description:: 
  */
@@ -20,7 +20,7 @@ int main()
 	rs2::config cfg;
 	cfg.enable_stream(RS2_STREAM_COLOR);
 	cfg.enable_stream(RS2_STREAM_DEPTH);
-	rs2::align align_to_color(RS2_STREAM_COLOR);
+	rs2::align align_to_depth(RS2_STREAM_COLOR);
 	rs2::pipeline pipe;
   
 	pipe.start(cfg);
@@ -33,10 +33,12 @@ int main()
     // func();
 		//  获取RGB图
 		//  对齐图像
-		frameset = align_to_color.process(frameset);
+		frameset = align_to_depth.process(frameset);
 		// frame color_frames = frames.get_color_frame();
 
     auto depth = frameset.get_depth_frame();
+    auto color = frameset.get_color_frame();
+
     auto colorized_depth = color_map.colorize(depth);
 		//  帧转化为Mat 尺寸为RGB帧的尺寸
 		Mat algin_img = Mat(Size(colorized_depth.as<video_frame>().get_width(),
