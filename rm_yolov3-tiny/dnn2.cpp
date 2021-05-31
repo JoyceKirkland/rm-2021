@@ -132,9 +132,7 @@ void postprocess(cv::Mat &frame, std::vector<cv::Mat> &outs, int min_distance)
   // lower confidences
   vector<int> indices;
   dnn::NMSBoxes(boxes, confidences, confThreshold, nmsThreshold, indices);
-  for (int i = 0; i < 10; i++)
-  {
-  }
+ 
 
   for (size_t i = 0; i < indices.size(); ++i)
   {

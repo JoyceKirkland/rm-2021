@@ -9,7 +9,15 @@
 #include <librealsense2/rs.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
+#include <opencv2/core/core.hpp>
+#include <sstream>
+#include <fstream>
+#include <algorithm>
+#include <string>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <math.h>
 class RM_DepthCapture
 {
 private:
