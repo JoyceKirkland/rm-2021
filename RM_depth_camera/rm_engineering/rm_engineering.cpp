@@ -50,7 +50,6 @@ std::vector<std::string> RM_Engineering::setClassNames(std::string _classesFile)
   return classes_;
 }
 
-
 cv::dnn::Net RM_Engineering::setNet(std::string _modelConfiguration,std::string _modelWeights)
 {
   net_=cv::dnn::readNetFromDarknet(_modelConfiguration, _modelWeights);
@@ -72,6 +71,19 @@ std::vector<cv::Mat> RM_Engineering::getOutputsLayer(cv::dnn::Net &_net,cv::Mat 
   _net.forward(outs_, getOutputsNames(_net));
   return outs_;
 }
+
+std::vector<cv::Mat> RM_Engineering::getOutputsLayer(cv::dnn::Net &_net,cv::Mat &_frame,int _inpWidth,int _inpHeight)
+{
+  cv::Mat blob;
+  cv::dnn::blobFromImage(_frame, blob, 1 / 255.0, cv::Size(_inpWidth, _inpHeight), cv::Scalar(0, 0, 0), true, false);
+  //设置网络输入
+  _net.setInput(blob);
+  //获取输出层的输出
+  // std::vector<cv::Mat> outs;
+  _net.forward(outs_, getOutputsNames(_net));
+  return outs_;
+}
+
 
 void RM_Engineering::drawPred(int _classId, float _conf, int _left, int _top, int _right, int _bottom, cv::Mat &_frame, int _min_distance,  std::vector<std::string> _classes)
 {
@@ -147,6 +159,81 @@ std::vector<cv::Point> RM_Engineering::postprocess(cv::Mat &_frame, std::vector<
     // lower confidences
     std::vector<int> indices;
     cv::dnn::NMSBoxes(boxes, confidences, confThreshold_, nmsThreshold_, indices);
+
+    for (size_t i = 0; i < indices.size(); ++i)
+    {
+        int idx = indices[i];
+        int center_x1 = (2 * boxes[idx].x + boxes[idx].width) / 2;
+        int center_y1 = (2 * boxes[idx].y + boxes[idx].height) / 2;
+        // line(frame,Point2f((float)center_x1,(float)center_y1),Point2f(frame.cols/2,frame.rows/2),Scalar(255,255,255),2);
+        temp_xy_to_center = sqrt(pow(center_x1 - _frame.cols / 2, 2) + pow(center_y1 - _frame.rows / 2, 2));
+        xy_to_center.push_back(temp_xy_to_center);
+        center_x_y_.push_back(cv::Point(center_x1,center_y1));
+        // cout<<"xy_to_center["<<i<<"]:"<<xy_to_center[i]<<endl;
+        min_xy_to_center = xy_to_center[0];
+    }
+
+    for (size_t i = 0; i < indices.size(); i++)
+    {
+        // cout<<"xy_to_center["<<i<<"]:"<<xy_to_center[i]<<endl;
+        if (xy_to_center[i] < min_xy_to_center)
+        {
+            min_xy_to_center = xy_to_center[i];
+            index = i;
+        }
+    }
+    // cout<<"min_xy_to_center:"<<min_xy_to_center<<endl;
+
+    for (size_t i = 0; i < indices.size(); ++i)
+    {
+        int idx = indices[index];
+        cv::Rect box = boxes[idx];
+        drawPred(classIds[idx], confidences[idx], box.x, box.y,
+                  box.x + box.width, box.y + box.height, _frame, _min_distance, _classes);
+        // cout<<"idx["<<i<<"]:"<<idx<<endl;
+    }
+  }
+  return center_x_y_;
+}
+
+std::vector<cv::Point> RM_Engineering::postprocess(cv::Mat &_frame, std::vector<cv::Mat> &_outs, int _min_distance,std::vector<std::string> _classes,float _confThreshold,float _nmsThreshold)
+{
+  std::vector<int> classIds;
+  std::vector<float> confidences;
+  std::vector<cv::Rect> boxes;
+  std::vector<float> xy_to_center;
+  float min_xy_to_center = 0;
+  int index = 0;
+
+  float temp_xy_to_center = 0;
+
+  for (size_t i = 0; i < _outs.size(); ++i)
+  {
+    float *data = (float *)_outs[i].data;
+    for (int j = 0; j < _outs[i].rows; ++j, data += _outs[i].cols)
+    {
+      cv::Mat scores = _outs[i].row(j).colRange(5, _outs[i].cols);
+      cv::Point classIdPoint;
+      double confidence;
+      // Get the value and location of the maximum score
+      cv::minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
+      if (confidence > _confThreshold)
+      {
+          int centerX = (int)(data[0] * _frame.cols);
+          int centerY = (int)(data[1] * _frame.rows);
+          int width = (int)(data[2] * _frame.cols);
+          int height = (int)(data[3] * _frame.rows);
+          int left = centerX - width / 2;
+          int top = centerY - height / 2;
+          classIds.push_back(classIdPoint.x);
+          confidences.push_back((float)confidence);
+          boxes.push_back(cv::Rect(left, top, width, height));
+      }
+    }
+    // Perform non maximum suppression to eliminate redundant overlapping boxes with
+    // lower confidences
+    std::vector<int> indices;
+    cv::dnn::NMSBoxes(boxes, confidences, _confThreshold, _nmsThreshold, indices);
 
     for (size_t i = 0; i < indices.size(); ++i)
     {
