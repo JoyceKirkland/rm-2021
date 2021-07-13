@@ -5,12 +5,14 @@
  * @LastEditors: Please set LastEditors
  * @Description:: 
  */
+#pragma once
 
-#include "depth_camera/depth_camera.cpp"
+#include "depth_camera/depth_camera.h"
 #include <opencv2/dnn.hpp>
 #include <opencv2/dnn/shape_utils.hpp>
 
-class RM_Engineering : public RM_DepthCapture
+namespace engineering{
+class RM_Engineering
 {
 public:
   std::vector<cv::Point> center_x_y_; //中心点点集
@@ -50,3 +52,4 @@ public:
 
 };
 
+}

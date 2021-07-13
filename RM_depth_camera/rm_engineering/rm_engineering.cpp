@@ -8,7 +8,7 @@
 
 #include "rm_engineering.h"
 // #include "depth_camera/depth_camera.h"
-
+namespace engineering{
 RM_Engineering::RM_Engineering(){}
 
 RM_Engineering::~RM_Engineering(){}
@@ -269,4 +269,5 @@ std::vector<cv::Point> RM_Engineering::postprocess(cv::Mat &_frame, std::vector<
     }
   }
   return center_x_y_;
+}
 }

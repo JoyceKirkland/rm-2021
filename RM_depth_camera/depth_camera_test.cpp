@@ -6,13 +6,12 @@
  * @Description:: 
  */
 
-// #include "depth_camera.h"
-#include "depth_camera/depth_camera.cpp"
+#include "depth_camera/depth_camera.h"
 
 int main()
 {
   rs2::pipeline pipeline;                           //创建数据管道
-  RM_DepthCapture depth;                            //实例化类
+  depth_capture::RM_DepthCapture depth;                            //实例化类
   rs2::pipeline_profile profile = pipeline.start(); //start()函数返回数据管道的profile
 
   for (;;)

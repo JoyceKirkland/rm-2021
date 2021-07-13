@@ -10,6 +10,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <sstream>
 #include <fstream>
 #include <algorithm>
@@ -18,6 +19,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <math.h>
+
+namespace depth_capture{
 class RM_DepthCapture
 {
 private:
@@ -39,3 +42,4 @@ public:
   cv ::Mat getAlignedToColorFrame(rs2::pipeline _pipeline, rs2::frameset _frameset);   //深度图对齐到彩色图
   cv ::Mat getAlignedToDepthFrame(rs2::pipeline _pipeline, rs2::frameset _frameset);   //彩色图对齐到深度图
 };
+}
